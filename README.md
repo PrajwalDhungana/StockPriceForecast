@@ -1,2 +1,2 @@
-# StockMarketForecast
-Stock Market Prediction System using Machine Learning
+# Stock Forecast
+Stock Price Prediction System using Deep Learning LSTM Model
