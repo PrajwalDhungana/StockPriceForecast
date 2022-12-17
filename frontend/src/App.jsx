@@ -15,13 +15,14 @@ function App() {
   }, []);
 
   return (
-    <div>
-      <h1>Items</h1>
-      <ul>
+    <div className='bg-slate-200 flex flex-col h-screen items-center justify-center'>
+      <h1 className='text-6xl mb-5 text-slate-600 font-bold'>Items</h1>
+      <ul className='list-disc mb-5'>
         {items.map(item => (
-          <li key={item}>{item}</li>
+          <li className='text-slate-500 text-2xl' key={item}>{item}</li>
         ))}
       </ul>
+      <p className='text-slate-400 text-sm'>Fetched from backend server</p>
     </div>
   );
 }
