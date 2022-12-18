@@ -18,7 +18,7 @@ Install virtual environment
     <pre>py -m venv venv</pre>
     
 Install python dependencies
-    <pre></pre>
+    <pre>pip install requirements.txt</pre>
 
 Run the virtual environment
     <pre>venv\Scripts\activate</pre>
