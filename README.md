@@ -18,11 +18,11 @@ After you clone the repo, open terminal and go to the `backend` folder.
 Install virtual environment
     <pre>py -m venv venv</pre>
     
+Run the virtual environment
+    <pre>venv\Scripts\activate</pre>   
+    
 Install python dependencies
     <pre>pip install -r requirements.txt</pre>
-
-Run the virtual environment
-    <pre>venv\Scripts\activate</pre>
 
 ## Setup the Frontend
 Now, head back to the `frontend` folder
