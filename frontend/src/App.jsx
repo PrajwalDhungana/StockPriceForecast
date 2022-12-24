@@ -4,7 +4,6 @@ import Form from "./components/Form";
 
 function App() {
   const [items, setItems] = useState([]);
-  const [ticker, setTicker] = useState([]);
 
   axios.defaults.baseURL = "http://127.0.0.1:5000";
 
@@ -16,10 +15,6 @@ function App() {
     fetchData();
   }, []);
 
-  const insertedTicker = () => {
-    setTicker(ticker)
-  }
-
   return (
     <div className="bg-slate-200 flex flex-col h-screen items-center justify-center">
       <h1 className="text-6xl mb-5 text-slate-600 font-bold">Items</h1>
@@ -30,7 +25,7 @@ function App() {
           </li>
         ))}
       </ul>
-      <Form insertedTicker={insertedTicker} />
+      <Form />
       <p className="text-slate-400 text-sm">Fetched from backend server</p>
     </div>
   );
