@@ -1,35 +1,26 @@
 import React, { useState } from "react";
-import APIService from "../api";
+import axios from 'axios'
 
 export default function Form(props) {
-  const [tickerSymbol, setTickerSymbol] = useState([]);
-
-  const insertTicker = () => {
-    APIService.InsertTickerSymobl({ tickerSymbol })
-      .then((res) => props.insertedTicker(res))
-      .catch((error) => console.log("error", error));
-  };
+  const [tickerSymbol, setTickerSymbol] = useState('');
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    const data = {
-      tickerSymbol: this.state.tickerSymbol,
-    };
-    fetch("http://localhost:5000/insertTicker", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(data),
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        console.log("Success:", data);
+    const data = {tickerSymbol};
+    if(tickerSymbol !== ''){
+      axios.post("http://127.0.0.1:5000/submit", data)
+      .then((response) => {
+        console.log(response.data);
       })
       .catch((error) => {
-        console.error("Error:", error);
+        console.error(error);
       });
+    }
     setTickerSymbol("");
+  };
+
+  const handleChange = (event) => {
+    setTickerSymbol(event.target.value);
   };
 
   return (
@@ -44,7 +35,7 @@ export default function Form(props) {
           type="text"
           name="tickerSymbol"
           placeholder="Enter the ticker Symbol"
-          onChange={(e) => setTickerSymbol(e.target.value)}
+          onChange={handleChange}
         />
         <button
           className="bg-slate-500 text-white px-5 py-3 hover:bg-slate-600"
