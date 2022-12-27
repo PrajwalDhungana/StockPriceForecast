@@ -1,2 +1,9 @@
+# Required libraries and dependencies
 flask
 flask-cors
+numpy
+pandas
+scikit-learn
+pandas_datareader
+matplotlib
+tensorflow
