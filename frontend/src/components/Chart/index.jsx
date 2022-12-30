@@ -84,7 +84,10 @@ const StockChart = () => {
       yaxis: {
         labels: {
           formatter: function (val) {
-            return (val).toFixed(2);
+            return "$ " + (val).toFixed(2);
+          },
+          title: {
+            formatter: (seriesName) => seriesName + "akldjalskjd",
           },
         },
         title: {
