@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import Form from "./components/Form";
-import Chart from "./components/Chart";
+import StockChart from "./components/Chart";
 
 function App() {
   const [items, setItems] = useState([]);
@@ -27,7 +27,7 @@ function App() {
         ))}
       </ul>
       <Form />
-      <Chart />
+      <StockChart />
       <p className="text-slate-400 text-sm">Fetched from backend server</p>
     </div>
   );
