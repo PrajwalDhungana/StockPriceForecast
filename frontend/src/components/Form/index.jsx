@@ -1,20 +1,21 @@
 import React, { useState } from "react";
-import axios from 'axios'
+import axios from "axios";
 
 export default function Form(props) {
-  const [tickerSymbol, setTickerSymbol] = useState('');
+  const [tickerSymbol, setTickerSymbol] = useState("");
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    const data = {tickerSymbol};
-    if(tickerSymbol !== ''){
-      axios.post("http://127.0.0.1:5000/submit", data)
-      .then((response) => {
-        console.log(response.data);
-      })
-      .catch((error) => {
-        console.error(error);
-      });
+    const ticker = { tickerSymbol };
+    if (tickerSymbol !== "") {
+      axios
+        .post("http://127.0.0.1:5000/submit", ticker)
+        .then((response) => {
+          props.series(response.data);
+        })
+        .catch((error) => {
+          console.error(error);
+        });
     }
     setTickerSymbol("");
   };

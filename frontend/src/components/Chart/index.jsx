@@ -1,49 +1,18 @@
 import React from "react";
 import Chart from "react-apexcharts";
 
-const StockChart = () => {
+const StockChart = (props) => {
+  const key1 = 'x';
+  const key2 = 'y';
+  const values1 = props.date;
+  const values2 = props.close;
+  const datas = values1.map((value1, index) => ({ [key1]: value1, [key2]: values2[index] }))
+
   const variant = {
     series: [
       {
         name: "AAPL",
-        data: [
-          {
-            x: new Date("2018-03-12").getTime(),
-            y: 76,
-          },
-          {
-            x: new Date("2018-03-13").getTime(),
-            y: 78,
-          },
-          {
-            x: new Date("2018-03-14").getTime(),
-            y: 79,
-          },
-          {
-            x: new Date("2018-03-15").getTime(),
-            y: 69,
-          },
-          {
-            x: new Date("2018-03-16").getTime(),
-            y: 83,
-          },
-          {
-            x: new Date("2018-03-17").getTime(),
-            y: 88,
-          },
-          {
-            x: new Date("2018-03-18").getTime(),
-            y: 81,
-          },
-          {
-            x: new Date("2018-03-19").getTime(),
-            y: 79,
-          },
-          {
-            x: new Date("2018-03-20").getTime(),
-            y: 83,
-          },
-        ],
+        data: datas,
       },
     ],
     options: {
@@ -84,7 +53,10 @@ const StockChart = () => {
       yaxis: {
         labels: {
           formatter: function (val) {
-            return (val).toFixed(2);
+            return "$ " + val.toFixed(2);
+          },
+          title: {
+            formatter: (seriesName) => seriesName + "akldjalskjd",
           },
         },
         title: {
@@ -99,11 +71,11 @@ const StockChart = () => {
         shared: false,
         y: {
           formatter: function (val) {
-            return (val).toFixed(0);
+            return val.toFixed(0);
           },
           title: {
             formatter: (seriesName) => seriesName,
-        },
+          },
         },
       },
     },
