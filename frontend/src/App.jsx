@@ -18,7 +18,7 @@ function App() {
       setStatus(result.data.status);
     }
     fetchData();
-  }, []);
+  }, [status]);
 
   const get_data = (get_data) => {
     setDate(get_data.data.date);
@@ -32,10 +32,19 @@ function App() {
 
   return (
     <div className="flex flex-col items-center">
-      <div className="border-2 border-teal-500 text-teal-500 font-bold rounded-full px-3 py-0 flex justify-center items-center gap-2 mt-4">
-        <div className="w-3 h-3 bg-teal-500 flex rounded-full"></div>
-        {status}
-      </div>
+      {status == "Online" ? (
+        <>
+          <div className="border-2 border-teal-500 text-teal-500 font-bold rounded-full px-3 py-0 flex justify-center items-center gap-2 mt-4">
+            <div className="w-3 h-3 bg-teal-500 flex rounded-full"></div>
+            {status}
+          </div>
+        </>
+      ) : (
+        <div className="border-2 border-red-500 text-red-500 font-bold rounded-full px-3 py-0 flex justify-center items-center gap-2 mt-4">
+          <div className="w-3 h-3 bg-red-500 flex rounded-full"></div>
+          {status}
+        </div>
+      )}
       <h1 className="text-4xl mb-5 text-slate-600 font-bold mt-8">
         Stock Price Predictor
       </h1>
