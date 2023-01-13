@@ -17,9 +17,9 @@ app.url_map.strict_slashes = False
 CORS(app)
 
 
-@app.route('/items')
-def get_items():
-    return {"items": ["item1", "item2", "item3"]}
+@app.route('/status')
+def get_status():
+    return {"status": ["Online"]}
 
 
 @app.route('/submit', methods=['POST'])
