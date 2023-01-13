@@ -6,8 +6,10 @@ export default function Form(props) {
 
   const handleSubmit = (event) => {
     event.preventDefault();
+
     const ticker = { tickerSymbol };
     if (tickerSymbol !== "") {
+      props.ticker(tickerSymbol);
       axios
         .post("http://127.0.0.1:5000/submit", ticker)
         .then((response) => {
@@ -21,21 +23,21 @@ export default function Form(props) {
   };
 
   const handleChange = (event) => {
-    setTickerSymbol(event.target.value);
+    setTickerSymbol(event.target.value.toUpperCase());
   };
 
   return (
-    <div className="form-container p-7">
+    <div className={`${props.className} form-container p-7`}>
       <form
         className="flex flex-col gap-3"
         onSubmit={handleSubmit}
         method="POST"
       >
         <input
-          className="px-5 py-3"
+          className="px-5 py-3 uppercase w-[500px] placeholder:capitalize border-2 border-slate-400 outline-none"
           type="text"
           name="tickerSymbol"
-          placeholder="Enter the ticker Symbol"
+          placeholder="Enter the ticker symbol"
           onChange={handleChange}
         />
         <button
