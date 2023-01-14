@@ -23,7 +23,7 @@ function App() {
   const get_data = (get_data) => {
     setDate(get_data.data.date);
     setClosePrice(get_data.data.close);
-    if (date && closePrice !== []) setReady(true);
+    if (date && closePrice != []) setReady(true);
   };
 
   const get_ticker = (ticker) => {
