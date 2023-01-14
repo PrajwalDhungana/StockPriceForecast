@@ -4,13 +4,13 @@ from flask_cors import CORS
 import numpy as np
 import pandas as pd
 import pandas_datareader as pdr
-import matplotlib.pyplot as plt
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import mean_squared_error
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense
 from tensorflow.keras.layers import LSTM
 import math
+import keys as ky
 
 app = Flask(__name__)
 app.url_map.strict_slashes = False
@@ -36,8 +36,7 @@ def submit():
         print(tickerSymbol)
 
         # Fetch the data from tiingo API
-        key = 'c1755d754ae022eef0eb4bf39ba4c92a9216406a'
-        data = pdr.get_data_tiingo(tickerSymbol, api_key=key)
+        data = pdr.get_data_tiingo(tickerSymbol, api_key=ky.tiingo_api_key)
         df = pd.DataFrame(data=data)
         # df.to_csv(tickerSym+'.csv')
 
@@ -54,20 +53,20 @@ def submit():
         df.to_csv(tickerSymbol+'.csv', index=False)
         pd.read_csv(tickerSymbol+'.csv')
 
-        df['Date'] = pd.to_datetime(df['Date']).map(lambda x: str(x.date()))
+        df_date_min = pd.to_datetime(df['Date']).map(lambda x: str(x.date()))
         # close = df['Close']
         # date = df['Date'].tolist()
         # df1 = close
 
-        close = df['Close'].tolist()
-        date = df['Date'].tolist()
-        df1 = close
+        df_close = df['Close'].tolist()
+        df_date = df_date_min.tolist()
+        df1 = df_close
 
-        datas = [close, date]
+        datas = [df_close, df_date]
         datas
 
         scaler = MinMaxScaler(feature_range=(0, 1))
-        df1 = scaler.fit_transform(np.array(df1).reshape(-1, 1))
+        df_close_scaled = scaler.fit_transform(np.array(df_close).reshape(-1, 1))
 
         def create_dataset(dataset, time_step=1):
             dataX, dataY = [], []
@@ -78,10 +77,15 @@ def submit():
             return np.array(dataX), np.array(dataY)
 
         # Train the data
-        training_size = int(len(df1)*0.65)
-        testing_size = len(df1) - training_size
-        train_data, test_data = df1[0:training_size], df1[training_size:len(
-            df1)]
+        train_percent = 0.65
+        training_size = int(len(df_close)*train_percent)
+        training_date_size = int(len(df_date_min)*train_percent)
+
+        testing_size = len(df_close) - training_size
+
+        train_data, test_data = df_close[0:training_size], df_close[training_size:len(df_close)]
+        train_data_date, test_data_date = df_date_min[0:training_date_size],df_date_min[training_date_size:len(df_date_min)]
+
         time_step = 100
         X_train, Y_train = create_dataset(train_data, time_step)
         X_test, Y_test = create_dataset(test_data, time_step)
@@ -89,7 +93,7 @@ def submit():
         X_train = X_train.reshape(X_train.shape[0], X_train.shape[1], 1)
         X_test = X_test.reshape(X_test.shape[0], X_test.shape[1], 1)
 
-        # Fit the trained data to the LSTM Model and predict the next 30 days
+        # Fit the trained data to the LSTM Model
         list_output = []
         model = Sequential()
         hidden_layer = 50
