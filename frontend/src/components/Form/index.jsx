@@ -13,6 +13,7 @@ export default function Form(props) {
       axios
         .post("http://127.0.0.1:5000/submit", ticker)
         .then((response) => {
+          console.log(response.data)
           props.series(response.data);
         })
         .catch((error) => {
