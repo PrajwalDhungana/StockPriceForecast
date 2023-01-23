@@ -4,15 +4,17 @@ import axios from "axios";
 export default function Form(props) {
   const [tickerSymbol, setTickerSymbol] = useState("");
 
+  const ticker = { tickerSymbol };
+  
   const handleSubmit = (event) => {
     event.preventDefault();
 
-    const ticker = { tickerSymbol };
     if (tickerSymbol !== "") {
       props.ticker(tickerSymbol);
       axios
         .post("http://127.0.0.1:5000/submit", ticker)
         .then((response) => {
+          console.log(response.data);
           props.series(response.data);
         })
         .catch((error) => {
