@@ -18,7 +18,7 @@ function App() {
       setStatus(result.data.status);
     }
     fetchData();
-  }, []);
+  }, [tickerSymbol]);
 
   const get_data = (get_data) => {
     setDate(get_data.data.date);
