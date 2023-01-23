@@ -36,14 +36,14 @@ def submit():
         print(tickerSymbol)
 
         # Fetch the data from tiingo API
-        data = pdr.get_data_tiingo(tickerSymbol, api_key=ky.tiingo_api_key)
+        data = pdr.get_data_tiingo(tickerSymbol, api_key=ky.TIINGO_API_KEY)
         df = pd.DataFrame(data=data)
         # df.to_csv(tickerSym+'.csv')
 
         data = data.reset_index()
         df = pd.DataFrame()
         df['Symbol'] = data['symbol']
-        df['Date'] = data['date']
+        df['Date'] = pd.to_datetime(data['date']).map(lambda x: str(x.date()))
         df['Open'] = data['open']
         df['High'] = data['high']
         df['Low'] = data['low']
@@ -53,20 +53,16 @@ def submit():
         df.to_csv(tickerSymbol+'.csv', index=False)
         pd.read_csv(tickerSymbol+'.csv')
 
-        df_date_min = pd.to_datetime(df['Date']).map(lambda x: str(x.date()))
         # close = df['Close']
         # date = df['Date'].tolist()
         # df1 = close
 
-        df_close = df['Close'].tolist()
-        df_date = df_date_min.tolist()
-        df1 = df_close
-
-        datas = [df_close, df_date]
-        datas
+        close = df['AdjClose'].tolist()
+        date = df['Date'].tolist()
+        df1 = close
 
         scaler = MinMaxScaler(feature_range=(0, 1))
-        df_close_scaled = scaler.fit_transform(np.array(df_close).reshape(-1, 1))
+        df1 = scaler.fit_transform(np.array(df1).reshape(-1, 1))
 
         def create_dataset(dataset, time_step=1):
             dataX, dataY = [], []
@@ -78,13 +74,12 @@ def submit():
 
         # Train the data
         train_percent = 0.65
-        training_size = int(len(df_close)*train_percent)
-        training_date_size = int(len(df_date_min)*train_percent)
+        training_size = int(len(close)*train_percent)
+        testing_size = len(df1) - training_size
 
-        testing_size = len(df_close) - training_size
-
-        train_data, test_data = df_close[0:training_size], df_close[training_size:len(df_close)]
-        train_data_date, test_data_date = df_date_min[0:training_date_size],df_date_min[training_date_size:len(df_date_min)]
+        train_data, test_data = df1[0:training_size], df1[training_size:len(
+            df1)]
+        train_data_date, test_data_date = date[0:training_size], date[training_size:len(date)]
 
         time_step = 100
         X_train, Y_train = create_dataset(train_data, time_step)
@@ -93,7 +88,7 @@ def submit():
         X_train = X_train.reshape(X_train.shape[0], X_train.shape[1], 1)
         X_test = X_test.reshape(X_test.shape[0], X_test.shape[1], 1)
 
-        # Fit the trained data to the LSTM Model
+        # Fit the trained data to the LSTM Model and predict the next 30 days
         list_output = []
         model = Sequential()
         hidden_layer = 50
@@ -161,14 +156,21 @@ def submit():
         transformed_list_output = scaler.inverse_transform(list_output).tolist()
         transformed_df1 = scaler.inverse_transform(df1).tolist()
 
-        keys = ['date', 'close']
+        keys1 = ['date', 'close']
         values = [date, close]
-        result = {
+        trends = {
             key: value for key,
-            value in zip(keys, values)
+            value in zip(keys1, values)
+        }
+
+        keys2 = ['train_date', 'train_close']
+        values2 = [train_data_date, test_data]
+        predicts = {
+            key: value for key,
+            value in zip(keys2, values2)
         }
         
-        return jsonify(data=result)
+        return jsonify(data=test_data)
     except Exception:
         return jsonify({'Status': 'error'})
 
