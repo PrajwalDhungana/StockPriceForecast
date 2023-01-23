@@ -1,0 +1,156 @@
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.metrics import mean_squared_error
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense
+from tensorflow.keras.layers import LSTM
+import math
+import numpy as np
+from pandas_datareader import data as pdr
+from datetime import date
+import yfinance as yf
+yf.pdr_override()
+import pandas as pd
+import keys as ky
+
+
+def fetch_data(ticker):
+    # # Fetch the data from tiingo API
+    # data = pdr.get_data_tiingo(ticker, api_key=ky.TIINGO_API_KEY)
+    # df = pd.DataFrame(data=data)
+    # return data, df
+
+    # We can get data by our choice by giving days bracket
+    start_date = "2017-01-01"
+    today = date.today()
+
+    files = []
+
+    def getData(ticker):
+        print(ticker)
+        data = pdr.get_data_yahoo(ticker, start=start_date, end=today)
+        dataname = ticker
+        files.append(dataname)
+        SaveData(data, dataname)
+
+    # Create a data folder in your current dir.
+    def SaveData(df, filename):
+        df.to_csv('./data/'+filename+'.csv')
+
+    # This will pass ticker to get data, and save that data as file.
+    getData(ticker)
+
+def predict(tickerSymbol):
+    fetch_data(tickerSymbol)
+    data = pd.read_csv('./data/' + tickerSymbol +'.csv')
+    print(data.head())
+    df = data.reset_index()
+
+    df_date_min = pd.to_datetime(df['Date']).map(lambda x: str(x.date()))
+    close = df['Close']
+    date = df['Date'].tolist()
+    df1 = close
+
+    # # close = df['Close'].tolist()
+    # # date = df_date_min.tolist()
+    # # df1 = close
+
+    scaler = MinMaxScaler(feature_range=(0, 1))
+    df_close_scaled = scaler.fit_transform(np.array(close).reshape(-1, 1))
+
+    def create_dataset(dataset, time_step=1):
+        dataX, dataY = [], []
+        for i in range(len(dataset)-time_step-1):
+            a = dataset[i:(i+time_step), 0]
+            dataX.append(a)
+            dataY.append(dataset[i+time_step, 0])
+        return np.array(dataX), np.array(dataY)
+        
+    # Train the data
+    train_percent = 0.65
+    training_size = int(len(close)*train_percent)
+    training_date_size = int(len(df_date_min)*train_percent)
+
+    testing_size = len(close) - training_size
+
+    train_data, test_data = close[0:training_size], close[training_size:len(close)]
+    train_data_date, test_data_date = df_date_min[0:training_date_size],df_date_min[training_date_size:len(df_date_min)]
+
+    time_step = 100
+    X_train, Y_train = create_dataset(train_data, time_step)
+    X_test, Y_test = create_dataset(test_data, time_step)
+
+    X_train = X_train.reshape(X_train.shape[0], X_train.shape[1], 1)
+    X_test = X_test.reshape(X_test.shape[0], X_test.shape[1], 1)
+
+    # Fit the trained data to the LSTM Model
+    list_output = []
+    model = Sequential()
+    hidden_layer = 50
+    model.add(LSTM(hidden_layer, return_sequences=True, input_shape=(X_train.shape[1], X_train.shape[2])))
+    model.add(LSTM(hidden_layer, return_sequences=True))
+    model.add(LSTM(hidden_layer))
+    model.add(Dense(1))
+    model.compile(loss='mean_squared_error', optimizer='adam')
+    model.fit(X_train, Y_train, validation_data=(X_test, Y_test), epochs=2, batch_size=64, verbose=1)
+    train_predict = model.predict(X_train)
+    test_predict = model.predict(X_test)
+    train_predict = scaler.inverse_transform(train_predict)
+    test_predict = scaler.inverse_transform(test_predict)
+    train_error = math.sqrt(mean_squared_error(Y_train, train_predict))
+    test_error = math.sqrt(mean_squared_error(Y_test, test_predict))
+
+    # Predict the next 30 days
+    x_input = test_data[(len(test_data) - 100):].reshape(1, -1)
+    temp_input = list(x_input)
+    temp_input = temp_input[0].tolist()
+    n_steps = 100
+    i = 0
+    while (i < 30):
+        if (len(temp_input) > 100):
+            x_input = np.array(temp_input[1:])
+            print("{} day input {}".format(i, x_input))
+            x_input = x_input.reshape(1, -1)
+            x_input = x_input.reshape(1, n_steps, 1)
+            yhat = model.predict(x_input, verbose=0)
+            print("{} day output {}".format(i, yhat))
+            temp_input.extend(yhat[0].tolist())
+            temp_input = temp_input[1:]
+            list_output.extend(yhat.tolist())
+            i += 1
+        else:
+            x_input = x_input.reshape(1, n_steps, 1)
+            yhat = model.predict(x_input, verbose=0)
+            print(yhat[0])
+            temp_input.extend(yhat[0].tolist())
+            print(len(temp_input))
+            list_output.extend(yhat.tolist())
+            print(list_output)
+            i += 1
+
+    day_new = np.arange(1, 101)
+    day_pred = np.arange(101, 131)
+
+    # Plot the predicted values
+    look_back = 100
+    trainPredictPlot = np.empty_like(df1)
+    trainPredictPlot[:, :] = np.nan
+    trainPredictPlot[look_back:len(train_predict) + look_back, :] = train_predict
+    testPredictPlot = np.empty_like(df1)
+    testPredictPlot[:, :] = np.nan
+    testPredictPlot[len(train_predict) + (look_back*2) + 1: len(df1) - 1, :] = test_predict
+
+    df2 = df1.tolist()
+    df2.extend(list_output)
+    train_price = train_predict.tolist()
+    test_price = test_predict.tolist()
+    transformed_list_output = scaler.inverse_transform(list_output).tolist()
+    transformed_df1 = scaler.inverse_transform(df1).tolist()
+
+    keys = ['date', 'close']
+    values = [date, close]
+    result = {
+        key: value for key,
+        value in zip(keys, values)
+    }
+        
+    return result
