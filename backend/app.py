@@ -11,7 +11,7 @@ from tensorflow.keras.layers import Dense
 from tensorflow.keras.layers import LSTM
 import math
 import keys as ky
-import prediction_model as prediction
+from prediction_model import predict
 
 app = Flask(__name__)
 app.url_map.strict_slashes = False
@@ -26,17 +26,11 @@ def get_status():
 @app.route('/submit', methods=['POST'])
 def submit():
     try:
-        # 1. Collect the stock data
-        # 2. Preprocess the Data - Train & Test
-        # 3. Create an Stacked LSTM Model
-        # 4. Predict the test data and plot the output
-        # 5. Predict the future 30 dats and plot the output
-
         data = request.get_json()
         tickerSymbol = data['tickerSymbol']
         print(tickerSymbol)
 
-        prediction = prediction.predict(tickerSymbol)
+        prediction = predict(tickerSymbol)
 
         return jsonify(data=prediction)
     except Exception as ex:
