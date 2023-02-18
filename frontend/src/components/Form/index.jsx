@@ -16,6 +16,7 @@ export default function Form(props) {
         .then((response) => {
           console.log(response.data);
           props.series(response.data);
+          props.predicts(response.data);
         })
         .catch((error) => {
           console.error(error);
