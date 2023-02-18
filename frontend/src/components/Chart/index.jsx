@@ -44,7 +44,7 @@ const StockChart = (props) => {
         size: 0,
       },
       title: {
-        text: props.ticker + " Stock Price Movement",
+        text: props.ticker + " " + props.message,
         align: "left",
       },
       fill: {
@@ -88,7 +88,7 @@ const StockChart = (props) => {
   };
 
   return (
-    <div id="chart">
+    <div className="chart mb-20">
       <Chart
         options={variant.options}
         series={variant.series}
