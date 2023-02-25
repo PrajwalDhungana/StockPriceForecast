@@ -10,6 +10,7 @@ import numpy as np
 from pandas_datareader import data as pdr
 import datetime
 from datetime import date
+import os
 import yfinance as yf
 yf.pdr_override()
 
@@ -36,6 +37,8 @@ def fetch_data(ticker):
 
     # Create a data folder in your current dir.
     def SaveData(df, filename):
+        if not (os.path.isdir('data')):
+            os.mkdir('data')
         df.to_csv('./data/'+filename+'.csv')
 
     # This will pass ticker to get data, and save that data as file.
