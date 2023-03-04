@@ -1,181 +1,164 @@
-import keys as ky
 import pandas as pd
-from sklearn.preprocessing import MinMaxScaler
-from sklearn.metrics import mean_squared_error
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense
-from tensorflow.keras.layers import LSTM
-import math
 import numpy as np
-from pandas_datareader import data as pdr
-import datetime
-from datetime import date
-import os
+import datetime as dt
+import sys
 import yfinance as yf
-yf.pdr_override()
+from NeuralNetworks.lstm import LSTM
+from utils import *
+from normalize import Normalize
 
+def lstm_predict(stock, start, end):
+    # shift start date -4 days for correct test/train i/o
 
-def fetch_data(ticker):
-    # # Fetch the data from tiingo API
-    # data = pdr.get_data_tiingo(ticker, api_key=ky.TIINGO_API_KEY)
-    # df = pd.DataFrame(data=data)
-    # return data, df
+    # get stock data
+    try:
+        df, data = get_stock_data(stock, start, end, json=False)
+    except:
+        # error info
+        e = sys.exc_info()
+        print(e)
+        print("lstm predict fail")
+        return e
 
-    # We can get data by our choice by giving days bracket
-    start_date = "2017-01-01"
-    today = date.today()
-    print(today)
-
-    files = []
-
-    def getData(ticker):
-        print(ticker)
-        data = pdr.get_data_yahoo(ticker, start=start_date, end=today)
-        dataname = ticker
-        files.append(dataname)
-        SaveData(data, dataname)
-
-    # Create a data folder in your current dir.
-    def SaveData(df, filename):
-        if not (os.path.isdir('data')):
-            os.mkdir('data')
-        df.to_csv('./data/'+filename+'.csv')
-
-    # This will pass ticker to get data, and save that data as file.
-    getData(ticker)
-
-def create_dataset(dataset, time_step=1):
-    dataX, dataY = [], []
-    for i in range(len(dataset)-time_step-1):
-        a = dataset[i:(i+time_step), 0]
-        dataX.append(a)
-        dataY.append(dataset[i+time_step, 0])
-    return np.array(dataX), np.array(dataY)
-
-
-def predict(tickerSymbol):
-    fetch_data(tickerSymbol)
-    data = pd.read_csv('./data/' + tickerSymbol + '.csv')
-    print(data.tail())
-    df = data.reset_index()
-
-    close = df['Adj Close'].tolist()
-    date = pd.to_datetime(df['Date']).map(lambda x: str(x.date())).tolist()
-    df1 = close
-
-    scaler = MinMaxScaler(feature_range=(0, 1))
-    df1 = scaler.fit_transform(np.array(df1).reshape(-1, 1))
-
-    # Train the data
-    train_percent = 0.65
-    training_size = int(len(close)*train_percent)
-    testing_size = len(df1) - training_size
-
-    train_data, test_data = df1[0:training_size], df1[training_size:len(df1)]
-    train_data_date, test_data_date = date[0:training_size], date[training_size:len(
-        date)]
-    time_step = 100
-    X_train, Y_train = create_dataset(train_data, time_step)
-    X_test, Y_test = create_dataset(test_data, time_step)
-    X_train = X_train.reshape(X_train.shape[0], X_train.shape[1], 1)
-    X_test = X_test.reshape(X_test.shape[0], X_test.shape[1], 1)
-
-    # Fit the trained data to the LSTM Model and predict the next 30 days
-    list_output = []
-    model = Sequential()
-    hidden_layer = 50
-    model.add(LSTM(hidden_layer, return_sequences=True,
-              input_shape=(X_train.shape[1], X_train.shape[2])))
-    model.add(LSTM(hidden_layer, return_sequences=True))
-    model.add(LSTM(hidden_layer))
-    model.add(Dense(1))
-    model.compile(loss='mean_squared_error', optimizer='adam')
-    model.fit(X_train, Y_train, validation_data=(
-        X_test, Y_test), epochs=1, batch_size=64, verbose=1)
-
-    train_predict = model.predict(X_train)
-    test_predict = model.predict(X_test)
-    train_predict = scaler.inverse_transform(train_predict)
-    test_predict = scaler.inverse_transform(test_predict)
-    train_error = math.sqrt(mean_squared_error(Y_train, train_predict))
-    test_error = math.sqrt(mean_squared_error(Y_test, test_predict))
-
-    # Predict the next 7 days
-    x_input = test_data[(len(test_data) - 100):].reshape(1, -1)
-    temp_input = list(x_input)
-    temp_input = temp_input[0].tolist()
-    n_steps = 100
-    i = 0
-    days = 30
-    while (i < days):
-        if (len(temp_input) > 100):
-            x_input = np.array(temp_input[1:])
-            x_input = x_input.reshape(1, -1)
-            x_input = x_input.reshape(1, n_steps, 1)
-            yhat = model.predict(x_input, verbose=0)
-            temp_input.extend(yhat[0].tolist())
-            temp_input = temp_input[1:]
-            list_output.extend(yhat.tolist())
-            i += 1
-        else:
-            x_input = x_input.reshape(1, n_steps, 1)
-            yhat = model.predict(x_input, verbose=0)
-            temp_input.extend(yhat[0].tolist())
-            list_output.extend(yhat.tolist())
-            i += 1
-
-    # Generate next prediction date
-    i=1
-    pred_date = []
-    while(i <= days) :
-        new_dates = datetime.date.today() + datetime.timedelta(days=i)
-        pred_date.append(new_dates.strftime ('%Y-%m-%d'))
-        i += 1
-
-    print("Next prediction dates : ", pred_date)
-
-    day_new = np.arange(1, 101)
-    day_pred = np.arange(101, 101 + days)
-
-    print("Day_NEW : ", day_new)
-    print("Day_Pred : ", day_pred)
-
-    # Plot the predicted values
-    look_back = 100
-    trainPredictPlot = np.empty_like(df1)
-    trainPredictPlot[:, :] = np.nan
-    trainPredictPlot[look_back:len(
-        train_predict) + look_back, :] = train_predict
-    testPredictPlot = np.empty_like(df1)
-    testPredictPlot[:, :] = np.nan
-    testPredictPlot[len(train_predict) + (look_back*2) +
-                    1: len(df1) - 1, :] = test_predict
-    df2 = df1.tolist()
-    df2.extend(list_output)
-    train_price = train_predict.tolist()
-    test_price = test_predict.tolist()
+    stock = df
+    data = data.reset_index()
+    trend_dates = pd.to_datetime(data["Date"]).map(lambda x: str(x.date())).tolist()
     
-    # Transformed output
-    pred_output = scaler.inverse_transform(list_output).tolist()
-    pred_close = [item for subarr in pred_output for item in subarr]
-    transformed_df1 = scaler.inverse_transform(df1).tolist()
+    scaler = Normalize(df)
+    df = scaler.normalize_data(df)
 
-    print("TRANSFORMED LIST OUTPUT : ", pred_close)
+    train_max_index = round((len(df) - 1) * 0.80)
 
-    # Object that contains normal trends data
-    keys1 = ['date', 'close']
-    values = [date, close]
-    trends = {
-        key: value for key,
-        value in zip(keys1, values)
-    }
+    training_input_1 = [[df[i-6], df[i-5]] for i in range(6, train_max_index)]
+    training_input_2 = [[df[i-4], df[i-3]] for i in range(6, train_max_index)]
+    training_input_3 = [[df[i-2], df[i-1]] for i in range(6, train_max_index)]
+    target = [[i] for i in df[6:train_max_index]]
 
-    #Object that contains prediction data
-    keys2 = ['date', 'close']
-    values2 = [pred_date, pred_close]
-    predicts = {
-        key: value for key,
-        value in zip(keys2, values2)
-    }
+    training_input_1 = np.array(training_input_1, dtype=float)
+    training_input_2 = np.array(training_input_2, dtype=float)
+    training_input_3 = np.array(training_input_3, dtype=float)
+    target = np.array(target, dtype=float)
 
-    return trends, predicts
+    assert len(training_input_1) == len(training_input_2) == len(training_input_3) == len(target)
+
+    # create neural network
+    NN = LSTM()
+
+    # number of training cycles
+    training_cycles = 10
+
+    # train the neural network
+    for cycle in range(training_cycles):
+        for n in range(0, len(target)):
+            output = NN.train(training_input_1, training_input_2, training_input_3, target)
+
+
+    # de-Normalize
+    output = scaler.denormalize_data(output)
+    target = scaler.denormalize_data(target)
+
+    # transpose
+    output = output.T
+
+    # change data type so it can be plotted
+    prices = pd.DataFrame(output)
+
+    # [price 2 days ago, price yesterday] for each day in range
+    testing_input_1 = [[df[i-6], df[i-5]] for i in range(train_max_index, len(df))]
+    testing_input_2 = [[df[i-4], df[i-3]] for i in range(train_max_index, len(df))]
+    testing_input_3 = [[df[i-2], df[i-1]] for i in range(train_max_index, len(df))]
+    test_target = [[i] for i in df[train_max_index:len(df)]]
+
+    assert len(testing_input_1) == len(testing_input_2) == len(testing_input_3) == len(test_target)
+
+    testing_input_1 = np.array(testing_input_1, dtype=float)
+    testing_input_2 = np.array(testing_input_2, dtype=float)
+    testing_input_3 = np.array(testing_input_3, dtype=float)
+    test_target = np.array(test_target, dtype=float)
+
+    # test the network with unseen data
+    test = NN.test(testing_input_1, testing_input_2, testing_input_3)
+
+    # de-Normalize data
+    test = scaler.denormalize_data(test)
+    test_target = scaler.denormalize_data(test_target)
+
+    # transplose test results
+    test = test.T
+
+    # accuracy
+    train_accuracy = 100 - mape(target, output)
+    print("------------ TRAINING STATS ------------")
+    print("Accuracy in %: ", train_accuracy)
+    print("Mean Squared Error (MSE) : ", mse(target, output))
+    print("Root Mean Square Error (RMSE) : ", rmse(target, output))
+
+    # accuracy
+    test_accuracy = 100 - mape(test_target, test)
+    print("\n------------ TESTING STATS ------------")
+    print("Accuracy in %: ", test_accuracy)
+    print("Mean Squared Error (MSE) : ", mse(test_target, test))
+    print("Root Mean Square Error (RMSE) : ", rmse(test_target, test))
+    
+    num_days = 0
+    predict = []
+    if(dt.datetime(*end) > dt.datetime.today()):
+        num_days = (dt.datetime(*end) - dt.datetime.today()).days
+        print("DAYS : ", num_days)
+
+        pred_input = pd.DataFrame(test)
+        pred_input = pred_input[0].tail(n=100)
+        scaler = Normalize(pred_input)
+        pred_input = scaler.normalize_data(pred_input)
+
+        # prediction for future
+        prediction_input_1 = [[pred_input[i-6], pred_input[i-5]] for i in range(6, len(pred_input))]
+        prediction_input_2 = [[pred_input[i-4], pred_input[i-3]] for i in range(6, len(pred_input))]
+        prediction_input_3 = [[pred_input[i-2], pred_input[i-1]] for i in range(6, len(pred_input))]
+        predict_target = [[i] for i in pred_input[6:len(pred_input)]]
+
+        assert len(prediction_input_1) == len(prediction_input_2) == len(prediction_input_3) == len(predict_target)
+
+        prediction_input_1 = np.array(prediction_input_1, dtype=float)
+        prediction_input_2 = np.array(prediction_input_2, dtype=float)
+        prediction_input_3 = np.array(prediction_input_3, dtype=float)
+        predict_target = np.array(predict_target, dtype=float)
+
+        # test the network with unseen data
+        predict = NN.test(prediction_input_1, prediction_input_2, prediction_input_3)
+
+        # de-Normalize data
+        predict = scaler.denormalize_data(predict)
+        predict_target = scaler.denormalize_data(predict_target)
+
+        # transplose test results
+        predict = predict.T
+
+    return stock, trend_dates, prices, pd.DataFrame(test), pd.DataFrame(predict), str(round(test_accuracy, 2)), num_days
+
+def get_stock_data(ticker, start=[2020, 1, 1], end=[2023, 1, 1], json=True):
+    # *list passes the values in list as parameters
+    start = dt.datetime(*start)
+    end = dt.datetime(*end)
+
+    # download csv from yahoo finance
+    try:
+        data = yf.download(ticker, start, end)
+    except:
+        # error info
+        e = sys.exc_info()
+        print(e)
+        print("get data fail")
+        return e
+
+    # extract adjusted close column
+    df = data["Adj Close"]
+    # remove Date column
+    df = pd.DataFrame([i for i in df])[0]
+    if json:
+        # return data as JSON
+        return df.to_json()
+
+    else:
+        # return data as csv
+        return df, data
