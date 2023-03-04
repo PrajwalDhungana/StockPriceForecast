@@ -1,8 +1,14 @@
 import React, { useState } from "react";
 import axios from "axios";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+
+// CSS Modules, react-datepicker-cssmodules.css
+import 'react-datepicker/dist/react-datepicker-cssmodules.css';
 
 export default function Form(props) {
   const [tickerSymbol, setTickerSymbol] = useState("");
+  const [startDate, setStartDate] = useState(new Date());
 
   const ticker = { tickerSymbol };
   
@@ -43,6 +49,7 @@ export default function Form(props) {
           placeholder="Enter the ticker symbol"
           onChange={handleChange}
         />
+        <DatePicker selected={startDate} onChange={(date) => setStartDate(date)} />
         <button
           className="bg-slate-500 text-white px-5 py-3 hover:bg-slate-600"
           type="submit"
