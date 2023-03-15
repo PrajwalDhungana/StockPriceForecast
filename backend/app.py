@@ -1,176 +1,121 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-
-import numpy as np
-import pandas as pd
-import pandas_datareader as pdr
-from sklearn.preprocessing import MinMaxScaler
-from sklearn.metrics import mean_squared_error
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense
-from tensorflow.keras.layers import LSTM
-import math
-import keys as ky
+import datetime as dt
+import sys
+from prediction_model import lstm_predict
 
 app = Flask(__name__)
 app.url_map.strict_slashes = False
 CORS(app)
-
-
+app.config['TEMPLATES_AUTO_RELOAD'] = True
+# prevent caching so website can be updated dynamically
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
+    
+# app routes are urls which facilitate
+# data transmit, mainly:
+# Get and Post requests
 @app.route('/status')
 def get_status():
     return {"status": ["Online"]}
 
-
 @app.route('/submit', methods=['POST'])
 def submit():
-    try:
-        # 1. Collect the stock data
-        # 2. Preprocess the Data - Train & Test
-        # 3. Create an Stacked LSTM Model
-        # 4. Predict the test data and plot the output
-        # 5. Predict the future 30 dats and plot the output
+    # POST request
+    if request.method == 'POST':
+        # convert to JSON
+        data = request.get_json(force=True)
+        tickerSymbol = data['tickerSymbol'].upper()
+        # start = data["startDate"].split("-")
+        # end = data["endDate"].split("-")
+        start = ['2020', '01', '01']
+        end = ['2023', '04', '15']
 
-        data = request.get_json()
-        tickerSymbol = data['tickerSymbol']
-        print(tickerSymbol)
+        # convert strings to integers
+        start, end = [int(s) for s in start], [int(s) for s in end]
 
-        # Fetch the data from tiingo API
-        data = pdr.get_data_tiingo(tickerSymbol, api_key=ky.tiingo_api_key)
-        df = pd.DataFrame(data=data)
-        # df.to_csv(tickerSym+'.csv')
+        try:
+            # get original stock data, train and test results
+            actual, trend_dates, train_res, test_res, pred_res, accuracy, num_days = lstm_predict(tickerSymbol, start, end)
+        except:
+            # error info
+            e = sys.exc_info()
+            print(e)
+            print("handle_nn fail")
+            return "error", 404
 
-        data = data.reset_index()
-        df = pd.DataFrame()
-        df['Symbol'] = data['symbol']
-        df['Date'] = data['date']
-        df['Open'] = data['open']
-        df['High'] = data['high']
-        df['Low'] = data['low']
-        df['Close'] = data['close']
-        df['AdjClose'] = data['adjClose']
-        df['Volume'] = data['volume']
-        df.to_csv(tickerSymbol+'.csv', index=False)
-        pd.read_csv(tickerSymbol+'.csv')
+        # convert pandas dataframe to list
+        actual = [i for i in actual]
+        print("Pred DataFrame :: ", pred_res)
+        train_res, test_res, pred_res = [i for i in train_res[0][:]], [i for i in test_res[0][:]], [i for i in pred_res[0][:]]
+        train_date, test_date, pred_date = [i for i in trend_dates[6:len(train_res)]], [i for i in trend_dates[len(train_res)+6:]], [i for i in trend_dates[len(pred_res)+num_days]]
 
-        df_date_min = pd.to_datetime(df['Date']).map(lambda x: str(x.date()))
-        # close = df['Close']
-        # date = df['Date'].tolist()
-        # df1 = close
+        # Generate next prediction date
+        i=1
+        pred_date = []
+        while(i <= num_days) :
+            new_dates = dt.datetime.today() + dt.timedelta(days=i)
+            pred_date.append(new_dates.strftime ('%Y-%m-%d'))
+            i += 1
 
-        df_close = df['Close'].tolist()
-        df_date = df_date_min.tolist()
-        df1 = df_close
+        print("Next prediction dates : ", pred_date)
+        pred_res = pred_res[len(pred_res)-num_days:]
+        print("Next prediction prices : ", pred_res)
 
-        datas = [df_close, df_date]
-        datas
+        actualX = trend_dates
+        trainX = train_date
+        testX = test_date
+        predX = pred_date
 
-        scaler = MinMaxScaler(feature_range=(0, 1))
-        df_close_scaled = scaler.fit_transform(np.array(df_close).reshape(-1, 1))
+        # connect training and test lines in plot
+        test_res.insert(0, train_res[-1])
+        testX.insert(0, trainX[-1])
 
-        def create_dataset(dataset, time_step=1):
-            dataX, dataY = [], []
-            for i in range(len(dataset)-time_step-1):
-                a = dataset[i:(i+time_step), 0]
-                dataX.append(a)
-                dataY.append(dataset[i+time_step, 0])
-            return np.array(dataX), np.array(dataY)
+        # connect training and test lines in plot
+        pred_res.insert(0, test_res[-1])
+        predX.insert(0, testX[-1])
 
-        # Train the data
-        train_percent = 0.65
-        training_size = int(len(df_close)*train_percent)
-        training_date_size = int(len(df_date_min)*train_percent)
-
-        testing_size = len(df_close) - training_size
-
-        train_data, test_data = df_close[0:training_size], df_close[training_size:len(df_close)]
-        train_data_date, test_data_date = df_date_min[0:training_date_size],df_date_min[training_date_size:len(df_date_min)]
-
-        time_step = 100
-        X_train, Y_train = create_dataset(train_data, time_step)
-        X_test, Y_test = create_dataset(test_data, time_step)
-
-        X_train = X_train.reshape(X_train.shape[0], X_train.shape[1], 1)
-        X_test = X_test.reshape(X_test.shape[0], X_test.shape[1], 1)
-
-        # Fit the trained data to the LSTM Model
-        list_output = []
-        model = Sequential()
-        hidden_layer = 50
-        model.add(LSTM(hidden_layer, return_sequences=True,
-                  input_shape=(X_train.shape[1], X_train.shape[2])))
-        model.add(LSTM(hidden_layer, return_sequences=True))
-        model.add(LSTM(hidden_layer))
-        model.add(Dense(1))
-        model.compile(loss='mean_squared_error', optimizer='adam')
-        model.fit(X_train, Y_train, validation_data=(
-            X_test, Y_test), epochs=2, batch_size=64, verbose=1)
-        train_predict = model.predict(X_train)
-        test_predict = model.predict(X_test)
-        train_predict = scaler.inverse_transform(train_predict)
-        test_predict = scaler.inverse_transform(test_predict)
-        train_error = math.sqrt(mean_squared_error(Y_train, train_predict))
-        test_error = math.sqrt(mean_squared_error(Y_test, test_predict))
-
-        # Predict the next 30 days
-        x_input = test_data[(len(test_data) - 100):].reshape(1, -1)
-        temp_input = list(x_input)
-        temp_input = temp_input[0].tolist()
-        n_steps = 100
-        i = 0
-        while (i < 30):
-            if (len(temp_input) > 100):
-                x_input = np.array(temp_input[1:])
-                print("{} day input {}".format(i, x_input))
-                x_input = x_input.reshape(1, -1)
-                x_input = x_input.reshape(1, n_steps, 1)
-                yhat = model.predict(x_input, verbose=0)
-                print("{} day output {}".format(i, yhat))
-                temp_input.extend(yhat[0].tolist())
-                temp_input = temp_input[1:]
-                list_output.extend(yhat.tolist())
-                i += 1
-            else:
-                x_input = x_input.reshape(1, n_steps, 1)
-                yhat = model.predict(x_input, verbose=0)
-                print(yhat[0])
-                temp_input.extend(yhat[0].tolist())
-                print(len(temp_input))
-                list_output.extend(yhat.tolist())
-                print(list_output)
-                i += 1
-
-        day_new = np.arange(1, 101)
-        day_pred = np.arange(101, 131)
-
-        # Plot the predicted values
-        look_back = 100
-        trainPredictPlot = np.empty_like(df1)
-        trainPredictPlot[:, :] = np.nan
-        trainPredictPlot[look_back:len(
-            train_predict) + look_back, :] = train_predict
-        testPredictPlot = np.empty_like(df1)
-        testPredictPlot[:, :] = np.nan
-        testPredictPlot[len(train_predict) + (look_back*2) +
-                        1: len(df1) - 1, :] = test_predict
-
-        df2 = df1.tolist()
-        df2.extend(list_output)
-        train_price = train_predict.tolist()
-        test_price = test_predict.tolist()
-        transformed_list_output = scaler.inverse_transform(list_output).tolist()
-        transformed_df1 = scaler.inverse_transform(df1).tolist()
-
-        keys = ['date', 'close']
-        values = [date, close]
-        result = {
+        # Object that contains normal trends data
+        keys1 = ['date', 'close']
+        values = [actualX, actual]
+        trends = {
             key: value for key,
-            value in zip(keys, values)
+            value in zip(keys1, values)
         }
-        
-        return jsonify(data=result)
-    except Exception:
-        return jsonify({'Status': 'error'})
 
+        # #Object that contains prediction data
+        keys2 = ['date', 'close']
+        values2 = [pred_date, pred_res]
+        predicts = {
+            key: value for key,
+            value in zip(keys2, values2)
+        }
+
+        # #Object that contains train data
+        keys3 = ['date', 'close']
+        values3 = [trainX, train_res]
+        train = {
+            key: value for key,
+            value in zip(keys3, values3)
+        }
+
+        # #Object that contains train data
+        keys4 = ['date', 'close']
+        values4 = [testX, test_res]
+        test = {
+            key: value for key,
+            value in zip(keys4, values4)
+        }
+
+        return jsonify(data=trends, prediction=predicts, train=train, test=test, accuracy=accuracy),{"stock" : tickerSymbol,
+                "actual" : actual,
+                "actualX" : actualX,
+                "train" : train_res,
+                "trainX" : trainX, 
+                "test" : test_res,
+                "testX" : testX,
+                "pred" : pred_res,
+                "predX" : predX,
+                "accuracy" : accuracy}
+        
 if __name__ == '__main__':
     app.run(debug=True)

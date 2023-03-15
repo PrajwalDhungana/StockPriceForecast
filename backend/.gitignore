@@ -131,3 +131,6 @@ dmypy.json
 
 # keys
 keys.py
+
+# data
+data/
