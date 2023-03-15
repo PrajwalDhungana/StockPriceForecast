@@ -1,35 +1,4 @@
-# from flask import Flask, request, jsonify
-# from flask_cors import CORS
-
-# from prediction_model import predict
-
-# app = Flask(__name__)
-# app.url_map.strict_slashes = False
-# CORS(app)
-
-
-# @app.route('/status')
-# def get_status():
-#     return {"status": ["Online"]}
-
-
-# @app.route('/submit', methods=['POST'])
-# def submit():
-#     try:
-#         data = request.get_json()
-#         tickerSymbol = data['tickerSymbol']
-#         print(tickerSymbol)
-
-#         prediction = predict(tickerSymbol)
-
-#         return jsonify(data=prediction)
-#     except Exception as ex:
-#         return jsonify(ex)
-
-# if __name__ == '__main__':
-#     app.run(debug=True)
-
-from flask import Flask, request
+from flask import Flask, request, jsonify
 from flask_cors import CORS
 import datetime as dt
 import sys
@@ -59,7 +28,7 @@ def submit():
         # start = data["startDate"].split("-")
         # end = data["endDate"].split("-")
         start = ['2020', '01', '01']
-        end = ['2023', '03', '15']
+        end = ['2023', '04', '15']
 
         # convert strings to integers
         start, end = [int(s) for s in start], [int(s) for s in end]
@@ -76,6 +45,7 @@ def submit():
 
         # convert pandas dataframe to list
         actual = [i for i in actual]
+        print("Pred DataFrame :: ", pred_res)
         train_res, test_res, pred_res = [i for i in train_res[0][:]], [i for i in test_res[0][:]], [i for i in pred_res[0][:]]
         train_date, test_date, pred_date = [i for i in trend_dates[6:len(train_res)]], [i for i in trend_dates[len(train_res)+6:]], [i for i in trend_dates[len(pred_res)+num_days]]
 
@@ -104,7 +74,39 @@ def submit():
         pred_res.insert(0, test_res[-1])
         predX.insert(0, testX[-1])
 
-        return {"stock" : tickerSymbol,
+        # Object that contains normal trends data
+        keys1 = ['date', 'close']
+        values = [actualX, actual]
+        trends = {
+            key: value for key,
+            value in zip(keys1, values)
+        }
+
+        # #Object that contains prediction data
+        keys2 = ['date', 'close']
+        values2 = [pred_date, pred_res]
+        predicts = {
+            key: value for key,
+            value in zip(keys2, values2)
+        }
+
+        # #Object that contains train data
+        keys3 = ['date', 'close']
+        values3 = [trainX, train_res]
+        train = {
+            key: value for key,
+            value in zip(keys3, values3)
+        }
+
+        # #Object that contains train data
+        keys4 = ['date', 'close']
+        values4 = [testX, test_res]
+        test = {
+            key: value for key,
+            value in zip(keys4, values4)
+        }
+
+        return jsonify(data=trends, prediction=predicts, train=train, test=test, accuracy=accuracy),{"stock" : tickerSymbol,
                 "actual" : actual,
                 "actualX" : actualX,
                 "train" : train_res,
