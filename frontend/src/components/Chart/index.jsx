@@ -2,16 +2,23 @@ import React from "react";
 import Chart from "react-apexcharts";
 
 const StockChart = (props) => {
-  const key1 = 'x';
-  const key2 = 'y';
+  const key1 = "x";
+  const key2 = "y";
   const values1 = props.date;
   const values2 = props.close;
-  const datas = values1.map((value1, index) => ({ [key1]: value1, [key2]: values2[index] }))
+  const datas = values1.map((value1, index) => ({
+    [key1]: value1,
+    [key2]: values2[index],
+  }));
 
   const variant = {
     series: [
       {
-        name: "AAPL",
+        name: props.ticker,
+        data: datas,
+      },
+      {
+        name: "Train",
         data: datas,
       },
     ],
@@ -19,8 +26,7 @@ const StockChart = (props) => {
       chart: {
         type: "area",
         stacked: false,
-        height: 350,
-        width: 700,
+        width: 1000,
         zoom: {
           type: "x",
           enabled: true,
@@ -30,6 +36,11 @@ const StockChart = (props) => {
           autoSelected: "zoom",
         },
       },
+      colors: ["#1507bb", "#fface2"],
+      stroke: {
+        width: 1,
+        strokeColor: "#8d5ee7",
+      },
       dataLabels: {
         enabled: false,
       },
@@ -37,7 +48,7 @@ const StockChart = (props) => {
         size: 0,
       },
       title: {
-        text: "Stock Price Movement",
+        text: props.ticker + " " + props.message,
         align: "left",
       },
       fill: {
@@ -53,10 +64,10 @@ const StockChart = (props) => {
       yaxis: {
         labels: {
           formatter: function (val) {
-            return "$ " + val.toFixed(2);
+            return "$" + val.toFixed(2);
           },
           title: {
-            formatter: (seriesName) => seriesName + "akldjalskjd",
+            formatter: (seriesName) => seriesName,
           },
         },
         title: {
@@ -67,11 +78,10 @@ const StockChart = (props) => {
         type: "datetime",
       },
       tooltip: {
-        theme: "dark",
         shared: false,
         y: {
           formatter: function (val) {
-            return val.toFixed(0);
+            return val.toFixed(2);
           },
           title: {
             formatter: (seriesName) => seriesName,
@@ -82,12 +92,12 @@ const StockChart = (props) => {
   };
 
   return (
-    <div id="chart">
+    <div className="chart mb-20">
       <Chart
         options={variant.options}
         series={variant.series}
         type="area"
-        height={350}
+        height={500}
         width={variant.options.chart.width}
       />
     </div>

@@ -3,7 +3,8 @@ flask
 flask-cors
 numpy
 pandas
-scikit-learn
+# scikit-learn
 pandas_datareader
 matplotlib
-tensorflow
+# tensorflow
+# pip3 install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu116

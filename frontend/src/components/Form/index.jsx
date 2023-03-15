@@ -1,16 +1,22 @@
 import React, { useState } from "react";
 import axios from "axios";
+import { DatePicker } from "@mui/x-date-pickers";
+import { Button, TextField, CircularProgress } from "@mui/material";
 
 export default function Form(props) {
   const [tickerSymbol, setTickerSymbol] = useState("");
 
+  const ticker = { tickerSymbol };
+
   const handleSubmit = (event) => {
     event.preventDefault();
-    const ticker = { tickerSymbol };
+    console.log(tickerSymbol)
     if (tickerSymbol !== "") {
+      props.ticker(tickerSymbol);
       axios
         .post("http://127.0.0.1:5000/submit", ticker)
         .then((response) => {
+          console.log(response.data);
           props.series(response.data);
         })
         .catch((error) => {
@@ -21,29 +27,19 @@ export default function Form(props) {
   };
 
   const handleChange = (event) => {
-    setTickerSymbol(event.target.value);
+    setTickerSymbol(event.target.value.toUpperCase());
   };
 
   return (
-    <div className="form-container p-7">
+    <div className={`${props.className} form-container p-7`}>
       <form
-        className="flex flex-col gap-3"
+        className="flex gap-3"
         onSubmit={handleSubmit}
         method="POST"
       >
-        <input
-          className="px-5 py-3"
-          type="text"
-          name="tickerSymbol"
-          placeholder="Enter the ticker Symbol"
-          onChange={handleChange}
-        />
-        <button
-          className="bg-slate-500 text-white px-5 py-3 hover:bg-slate-600"
-          type="submit"
-        >
-          Forecast
-        </button>
+        <TextField id="outlined-basic" label="Ticker Symbol" variant="outlined" value={tickerSymbol} onChange={(e) => handleChange(e)} />
+        <DatePicker label="Target prediction date" />
+        <Button variant="contained" type="submit">Forecast</Button>
       </form>
     </div>
   );
