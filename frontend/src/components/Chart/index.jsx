@@ -17,6 +17,10 @@ const StockChart = (props) => {
         name: props.ticker,
         data: datas,
       },
+      {
+        name: "Train",
+        data: datas,
+      },
     ],
     options: {
       chart: {
@@ -32,7 +36,7 @@ const StockChart = (props) => {
           autoSelected: "zoom",
         },
       },
-      colors: ["#1507bb"],
+      colors: ["#1507bb", "#fface2"],
       stroke: {
         width: 1,
         strokeColor: "#8d5ee7",
