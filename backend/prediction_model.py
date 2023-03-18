@@ -8,8 +8,6 @@ from utils import *
 from normalize import Normalize
 
 def lstm_predict(stock, start, end):
-    # shift start date -4 days for correct test/train i/o
-
     # get stock data
     try:
         df, data = get_stock_data(stock, start, end, json=False)
@@ -18,7 +16,7 @@ def lstm_predict(stock, start, end):
         e = sys.exc_info()
         print(e)
         print("lstm predict fail")
-        return e
+        return {"error": e}
 
     stock = df
     data = data.reset_index()
@@ -134,7 +132,17 @@ def lstm_predict(stock, start, end):
         # transplose test results
         predict = predict.T
 
-    return stock, trend_dates, prices, pd.DataFrame(test), pd.DataFrame(predict), str(round(test_accuracy, 2)), num_days
+    return (
+        stock, 
+        trend_dates, 
+        prices, 
+        pd.DataFrame(test), 
+        pd.DataFrame(predict), 
+        str(round(test_accuracy, 2)), 
+        str(round(mse(test_target, test), 5)),
+        str(round(rmse(test_target, test), 5)),
+        num_days
+    )
 
 def get_stock_data(ticker, start=[2020, 1, 1], end=[2023, 1, 1], json=True):
     # *list passes the values in list as parameters

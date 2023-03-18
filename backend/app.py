@@ -23,29 +23,26 @@ def submit():
     # POST request
     if request.method == 'POST':
         # convert to JSON
-        data = request.get_json(force=True)
+        data = request.get_json(force=False)
         tickerSymbol = data['tickerSymbol'].upper()
-        # start = data["startDate"].split("-")
-        # end = data["endDate"].split("-")
         start = ['2020', '01', '01']
-        end = ['2023', '04', '15']
+        end = data['targetDate']
 
         # convert strings to integers
         start, end = [int(s) for s in start], [int(s) for s in end]
 
         try:
             # get original stock data, train and test results
-            actual, trend_dates, train_res, test_res, pred_res, accuracy, num_days = lstm_predict(tickerSymbol, start, end)
+            actual, trend_dates, train_res, test_res, pred_res, accuracy, mse, rmse, num_days = lstm_predict(tickerSymbol, start, end)
         except:
             # error info
             e = sys.exc_info()
             print(e)
             print("handle_nn fail")
-            return "error", 404
+            return {'error': e}
 
         # convert pandas dataframe to list
         actual = [i for i in actual]
-        print("Pred DataFrame :: ", pred_res)
         train_res, test_res, pred_res = [i for i in train_res[0][:]], [i for i in test_res[0][:]], [i for i in pred_res[0][:]]
         train_date, test_date, pred_date = [i for i in trend_dates[6:len(train_res)]], [i for i in trend_dates[len(train_res)+6:]], [i for i in trend_dates[len(pred_res)+num_days]]
 
@@ -106,16 +103,17 @@ def submit():
             value in zip(keys4, values4)
         }
 
-        return jsonify(data=trends, prediction=predicts, train=train, test=test, accuracy=accuracy),{"stock" : tickerSymbol,
-                "actual" : actual,
-                "actualX" : actualX,
-                "train" : train_res,
-                "trainX" : trainX, 
-                "test" : test_res,
-                "testX" : testX,
-                "pred" : pred_res,
-                "predX" : predX,
-                "accuracy" : accuracy}
+        return jsonify(
+            data=trends, 
+            prediction=predicts, 
+            train=train, 
+            test=test, 
+            accuracy=accuracy, 
+            mse=mse, 
+            rmse=rmse,
+            days=num_days,
+            valid=True
+        )
         
 if __name__ == '__main__':
     app.run(debug=True)

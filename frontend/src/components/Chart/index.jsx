@@ -2,31 +2,57 @@ import React from "react";
 import Chart from "react-apexcharts";
 
 const StockChart = (props) => {
-  const key1 = "x";
-  const key2 = "y";
-  const values1 = props.date;
-  const values2 = props.close;
-  const datas = values1.map((value1, index) => ({
-    [key1]: value1,
-    [key2]: values2[index],
+  const date = props.date;
+  const close = props.close;
+  const data = date.map((date, index) => ({
+    x: date,
+    y: close[index],
+  }));
+
+  const trainDate = props.trainDate;
+  const trainClose = props.trainClose;
+  const trainData = trainDate.map((date, index) => ({
+    x: date,
+    y: trainClose[index],
+  }));
+
+  const testDate = props.testDate;
+  const testClose = props.testClose;
+  const testData = testDate.map((date, index) => ({
+    x: date,
+    y: testClose[index],
+  }));
+
+  const predictionDate = props.predictionDate;
+  const predictionClose = props.predictionClose;
+  const predictionData = predictionDate.map((date, index) => ({
+    x: date,
+    y: predictionClose[index],
   }));
 
   const variant = {
     series: [
       {
         name: props.ticker,
-        data: datas,
+        data: data,
       },
       {
         name: "Train",
-        data: datas,
+        data: trainData,
+      },
+      {
+        name: "Test",
+        data: testData,
+      },
+      {
+        name: "Prediction",
+        data: predictionData,
       },
     ],
     options: {
       chart: {
-        type: "area",
+        type: "line",
         stacked: false,
-        width: 1000,
         zoom: {
           type: "x",
           enabled: true,
@@ -36,9 +62,9 @@ const StockChart = (props) => {
           autoSelected: "zoom",
         },
       },
-      colors: ["#1507bb", "#fface2"],
+      colors: ["#FB5607", "#19647E", "#28AFB0", "#036016"],
       stroke: {
-        width: 1,
+        width: 2,
         strokeColor: "#8d5ee7",
       },
       dataLabels: {
@@ -47,24 +73,10 @@ const StockChart = (props) => {
       markers: {
         size: 0,
       },
-      title: {
-        text: props.ticker + " " + props.message,
-        align: "left",
-      },
-      fill: {
-        type: "gradient",
-        gradient: {
-          shadeIntensity: 1,
-          inverseColors: false,
-          opacityFrom: 0.5,
-          opacityTo: 0,
-          stops: [0, 90, 100],
-        },
-      },
       yaxis: {
         labels: {
           formatter: function (val) {
-            return "$" + val.toFixed(2);
+            return "$" + Number(Math.abs(val).toPrecision(5));
           },
           title: {
             formatter: (seriesName) => seriesName,
@@ -77,17 +89,40 @@ const StockChart = (props) => {
       xaxis: {
         type: "datetime",
       },
+      legend: {
+        position: 'top',
+        horizontalAlign: 'center',
+        fontSize: '14px',
+        floating: false,
+        markers: {
+          width: 12,
+          height: 12,
+          radius: '50%',
+          onClick: undefined,
+          offsetX: -2,
+          offsetY: 0
+        },    
+        itemMargin: {
+          horizontal: 10,
+          vertical: 0
+        }
+      },
       tooltip: {
-        shared: false,
-        y: {
-          formatter: function (val) {
-            return val.toFixed(2);
-          },
-          title: {
-            formatter: (seriesName) => seriesName,
-          },
+        shared: true,
+        marker: {
+          show: true,
         },
       },
+      responsive: [
+        {
+          breakpoint: 576,
+          options: {
+            legend: {
+              offsetY: -30,
+            },
+          },
+        },
+      ],
     },
   };
 
@@ -96,9 +131,8 @@ const StockChart = (props) => {
       <Chart
         options={variant.options}
         series={variant.series}
-        type="area"
+        type="line"
         height={500}
-        width={variant.options.chart.width}
       />
     </div>
   );

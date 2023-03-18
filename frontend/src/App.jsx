@@ -2,15 +2,20 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import Form from "./components/Form";
 import StockChart from "./components/Chart";
+import TradingViewWidget from "./components/Chart/TradingView";
 
 const App = () => {
   const [status, setStatus] = useState("Offline");
   const [tickerSymbol, setTickerSymbol] = useState("");
   const [date, setDate] = useState([]);
   const [closePrice, setClosePrice] = useState([]);
-  const [predictDate, setPredictDate] = useState([]);
-  const [predictClosePrice, setPredictClosePrice] = useState([]);
-  const [ready, setReady] = useState(false);
+  const [testDate, setTestDate] = useState([]);
+  const [testClosePrice, setTestClosePrice] = useState([]);
+  const [trainDate, setTrainDate] = useState([]);
+  const [trainClosePrice, setTrainClosePrice] = useState([]);
+  const [predictionDate, setPredictionDate] = useState([]);
+  const [predictionClosePrice, setPredictionClosePrice] = useState([]);
+  const [ready, setReady] = useState();
 
   axios.defaults.baseURL = "http://127.0.0.1:5000";
 
@@ -23,18 +28,29 @@ const App = () => {
     fetchData();
   }, []);
 
-  const get_data = (get_data) => {
-    setDate(get_data.data.date);
-    setClosePrice(get_data.data.close);
-    if (date && closePrice != []) setReady(true);
-  };
-
   const get_ticker = (ticker) => {
     setTickerSymbol(ticker);
   };
 
-  let trendChartMessage = "Stock Trend";
-  let predictionChartMessage = "Stock Price Prediction for the next 7 days";
+  const get_data = (get_data) => {
+    setDate(get_data.data.date);
+    setClosePrice(get_data.data.close);
+    setTrainDate(get_data.train.date);
+    setTrainClosePrice(get_data.train.close);
+    setTestDate(get_data.test.date);
+    setTestClosePrice(get_data.test.close);
+    setPredictionDate(get_data.prediction.date);
+    setPredictionClosePrice(get_data.prediction.close);
+    if (
+      date && 
+      closePrice && 
+      testDate && 
+      testClosePrice && 
+      trainDate && 
+      trainClosePrice && 
+      predictionDate && 
+      predictionClosePrice != []) setReady(true);
+  };
 
   return (
     <>
@@ -52,23 +68,40 @@ const App = () => {
             </div>
           )}
         </div>
-        <div className="flex flex-col items-center">
-          <h1 className="text-4xl mb-5 text-slate-600 font-bold mt-8">
-            Stock Price Predictor
-          </h1>
-          <Form className="mb-14" series={get_data} ticker={get_ticker} />
-          {ready === true && (
-            <>
+        <div className="flex flex-col items-center w-full gap-20">
+          <div>
+            <h1 className="text-4xl my-4 text-slate-600 font-bold text-center">
+              Stock Price Predictor
+            </h1>
+            <Form
+              className="mb-2"
+              ticker={get_ticker}
+              series={get_data}
+            />
+          </div>
+          <TradingViewWidget />
+          {ready && (
+            <div id="chart-container" className="flex flex-col w-full px-4 md:px-12 lg:px-32">
+              <p className="mb-3 font-bold text-slate-600 text-xl text-center">
+                {tickerSymbol} Stock Prediction
+              </p>
               <StockChart
                 date={date}
                 close={closePrice}
                 ticker={tickerSymbol}
-                message={trendChartMessage}
+                trainDate={trainDate}
+                trainClose={trainClosePrice}
+                testDate={testDate}
+                testClose={testClosePrice}
+                predictionDate={predictionDate}
+                predictionClose={predictionClosePrice}
+                series="Trend"
+                title="Stock Trend"
               />
-              <p className="text-slate-400 text-sm mb-8">
+              <p className="text-slate-400 text-sm mb-8 text-center">
                 Fetched from backend server
               </p>
-            </>
+            </div>
           )}
         </div>
       </div>
