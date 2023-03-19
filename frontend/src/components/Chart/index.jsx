@@ -127,7 +127,7 @@ const StockChart = (props) => {
   };
 
   return (
-    <div className="chart mb-20">
+    <div className="chart">
       <Chart
         options={variant.options}
         series={variant.series}
