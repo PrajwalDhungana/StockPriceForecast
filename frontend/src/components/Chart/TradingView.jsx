@@ -49,7 +49,7 @@ export default function TradingViewWidget() {
   );
 
   return (
-    <div className='tradingview-widget-container w-full px-32'>
+    <div className='tradingview-widget-container w-full px-4 md:px-12 lg:px-32'>
       <div id='tradingview_b0598' className='h-[500px]' />
       <div className="tradingview-widget-copyright">
         <a href="https://www.tradingview.com/symbols/NASDAQ-TSLA/" rel="noopener" target="_blank"><span className="blue-text">TSLA stock chart</span></a> by TradingView
