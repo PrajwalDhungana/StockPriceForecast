@@ -139,7 +139,10 @@ def lstm_predict(stock, start, end):
         pd.DataFrame(test), 
         pd.DataFrame(predict), 
         str(round(test_accuracy, 2)), 
+        str(round(train_accuracy, 2)), 
+        str(round(mse(target, output), 5)),
         str(round(mse(test_target, test), 5)),
+        str(round(rmse(target, output), 5)),
         str(round(rmse(test_target, test), 5)),
         num_days
     )
