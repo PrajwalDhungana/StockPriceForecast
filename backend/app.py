@@ -33,7 +33,7 @@ def submit():
 
         try:
             # get original stock data, train and test results
-            actual, trend_dates, train_res, test_res, pred_res, accuracy, mse, rmse, num_days = lstm_predict(tickerSymbol, start, end)
+            actual, trend_dates, train_res, test_res, pred_res, train_accuracy, test_accuracy, train_mse, test_mse, train_rmse, test_rmse, num_days = lstm_predict(tickerSymbol, start, end)
         except:
             # error info
             e = sys.exc_info()
@@ -108,9 +108,12 @@ def submit():
             prediction=predicts, 
             train=train, 
             test=test, 
-            accuracy=accuracy, 
-            mse=mse, 
-            rmse=rmse,
+            train_accuracy=train_accuracy, 
+            test_accuracy=test_accuracy, 
+            train_mse=train_mse, 
+            test_mse=test_mse, 
+            train_rmse=train_rmse,
+            test_rmse=test_rmse,
             days=num_days,
             valid=True
         )
